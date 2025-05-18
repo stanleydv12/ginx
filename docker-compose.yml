@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  ginx:
+    build:
+      context: .
+      target: development
+    container_name: ginx-proxy
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - ./config:/app/config
+      - go-modules:/go/pkg/mod
+    environment:
+      - CONFIG_PATH=/app/config/development.yaml
+      - AIR_WORKSPACE=/app
+      - AIR_BIN=./tmp/ginx
+    depends_on:
+      - backend1
+      - backend2
+    cap_add:
+      - SYS_NICE
+    sysctls:
+      - net.core.somaxconn=65535
+
+  # Backend services remain the same
+  backend1:
+    image: nginx:alpine
+    container_name: backend1
+    ports:
+      - "8081:80"
+    volumes:
+      - ./config/backend1.html:/usr/share/nginx/html/index.html:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+
+  backend2:
+    image: nginx:alpine
+    container_name: backend2
+    ports:
+      - "8082:80"
+    volumes:
+      - ./config/backend2.html:/usr/share/nginx/html/index.html:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+
+volumes:
+  go-modules:
+
+networks:
+  default:
+    driver: bridge

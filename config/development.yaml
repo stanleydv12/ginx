@@ -1,0 +1,43 @@
+# GinX Proxy Development Configuration
+# This configuration is used for local development
+
+# Server configuration
+server:
+  # Port to listen on
+  port: 8080
+  
+  # Method for handling async requests (epoll or io_uring)
+  async_method: "epoll"
+  
+  # Load balancing strategy (round_robin, least_connections, ip_hash)
+  load_balancer: "round_robin"
+  
+  # List of upstream servers to proxy requests to
+  # These match the service names in docker-compose.yml
+  upstream_servers:
+    - "http://localhost:8081"  # backend1
+    - "http://localhost:8082"  # backend2
+
+# Development-specific settings
+development:
+  debug: true
+  log_level: "debug"
+  
+# Metrics and monitoring (example)
+metrics:
+  enabled: true
+  port: 9090
+  path: "/metrics"
+
+# Request logging configuration
+logging:
+  level: "debug"
+  format: "json"
+  output: "stdout"
+
+# Health check endpoint
+health_check:
+  enabled: true
+  path: "/healthz"
+  interval: "30s"
+  timeout: "5s"
