@@ -10,8 +10,9 @@ import (
 
 func main() {
 	// Initialize logger
-	logger := logger.Default()
-	logger.SetDefault()
+	logger.Default()
+
+	logger.Info("Starting ginx proxy server")
 
 	// Load .env file if it exists
 	if err := godotenv.Load(); err != nil {

@@ -15,8 +15,8 @@ server:
   # List of upstream servers to proxy requests to
   # These match the service names in docker-compose.yml
   upstream_servers:
-    - "http://localhost:8081"  # backend1
-    - "http://localhost:8082"  # backend2
+    - "http://backend1:8081"  # backend1
+    - "http://backend2:8082"  # backend2
 
 # Development-specific settings
 development:
