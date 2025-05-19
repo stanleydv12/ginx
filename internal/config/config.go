@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"ginx/pkg/logger"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -22,6 +24,7 @@ func LoadConfig(path string) (*ServerConfig, error) {
 	if !filepath.IsAbs(path) {
 		wd, err := os.Getwd()
 		if err != nil {
+			logger.Error("Failed to get working directory", "error", err)
 			return nil, err
 		}
 		path = filepath.Join(wd, path)
@@ -30,20 +33,24 @@ func LoadConfig(path string) (*ServerConfig, error) {
 	// Read the config file
 	data, err := os.ReadFile(path)
 	if err != nil {
+		logger.Error("Failed to read config file", "path", path, "error", err)
 		return nil, err
 	}
 
 	// Parse the YAML into our config struct
 	var cfg ServerConfig
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		logger.Error("Failed to parse config file", "path", path, "error", err)
 		return nil, err
 	}
 
 	// Validate required fields
 	if cfg.Server.Port == 0 {
+		logger.Error("server.port is required")
 		return nil, errors.New("server.port is required")
 	}
 	if len(cfg.Server.UpstreamServers) == 0 {
+		logger.Error("at least one upstream server is required")
 		return nil, errors.New("at least one upstream server is required")
 	}
 
