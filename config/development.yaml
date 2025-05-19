@@ -3,6 +3,9 @@
 
 # Server configuration
 server:
+  # Address to listen on
+  address: "0.0.0.0"
+
   # Port to listen on
   port: 8080
   
