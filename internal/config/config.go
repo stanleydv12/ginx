@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"ginx/pkg/logger"
+	"github.com/stanleydv12/ginx/pkg/logger"
 
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v2"
@@ -22,7 +22,6 @@ type ServerConfig struct {
 }
 
 func LoadConfig() (*ServerConfig, error) {
-
 	// Load .env file if it exists
 	if err := godotenv.Load(); err != nil {
 		logger.Info("No .env file found or error loading .env file", "error", err)

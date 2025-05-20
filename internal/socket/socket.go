@@ -13,4 +13,6 @@ type SocketManager interface {
 	BindSocket(fd int, address string, port int) error
 	StartListening(fd int) error
 	AcceptConnection(fd int) (int, error)
+	ReadFromSocket(fd int, buf []byte) (int, error)
+	WriteToSocket(fd int, buf []byte) (int, error)
 }

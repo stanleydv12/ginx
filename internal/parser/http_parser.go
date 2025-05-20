@@ -9,7 +9,7 @@ import (
     "net/textproto"
     "strconv"
     "strings"
-    "ginx/internal/entity"
+    "github.com/stanleydv12/ginx/internal/entity"
 )
 
 const (

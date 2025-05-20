@@ -3,8 +3,8 @@
 package linux
 
 import (
-	"ginx/internal/socket"
-	"ginx/pkg/logger"
+	"github.com/stanleydv12/ginx/internal/socket"
+	"github.com/stanleydv12/ginx/pkg/logger"
 
 	"net"
 	"fmt"
@@ -123,5 +123,10 @@ func (s *LinuxSocketManager) AcceptConnection(fd int) (int, error) {
 	return connFd, nil
 }
 
+func (s *LinuxSocketManager) ReadFromSocket(fd int, buf []byte) (int, error) {
+	return unix.Read(fd, buf)
+}
 
-
+func (s *LinuxSocketManager) WriteToSocket(fd int, buf []byte) (int, error) {
+	return unix.Write(fd, buf)
+}

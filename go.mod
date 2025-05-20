@@ -1,4 +1,4 @@
-module ginx
+module github.com/stanleydv12/ginx
 
 go 1.23.2
 
