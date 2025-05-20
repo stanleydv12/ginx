@@ -6,7 +6,24 @@ services:
       target: prod
     restart: unless-stopped
     ports:
-      - ${PORT}:${PORT}
+      - "${PORT}:${PORT}"
     environment:
       APP_ENV: ${APP_ENV}
       PORT: ${PORT}
+    depends_on:
+      - httpbin1
+      - httpbin2
+
+  # First HTTP test server
+  httpbin1:
+    image: kennethreitz/httpbin
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+  # Second HTTP test server
+  httpbin2:
+    image: kennethreitz/httpbin
+    ports:
+      - "8082:80"
+    restart: unless-stopped
