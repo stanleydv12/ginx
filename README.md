@@ -1,39 +1,16 @@
-# Project ginx
+# ginx
 
-One Paragraph of project description goes here
+`ginx` is a lightweight, high-performance HTTP reverse proxy written in Go using low-level Linux syscalls like `epoll`. Inspired by NGINX, it aims to provide a minimal yet powerful async architecture with configurable load balancing and dynamic request routing.
 
-## Getting Started
+> ⚠️ This project is a work in progress (WIP). It's being built for learning, performance experimentation, and infrastructure tooling.
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+---
 
-## MakeFile
+## ✨ Features (Planned)
 
-Run build make command with tests
-```bash
-make all
-```
-
-Build the application
-```bash
-make build
-```
-
-Run the application
-```bash
-make run
-```
-
-Live reload the application:
-```bash
-make watch
-```
-
-Run the test suite:
-```bash
-make test
-```
-
-Clean up binary from the last build:
-```bash
-make clean
-```
+- ✅ Low-level async I/O using `epoll` and `unix sockets`
+- ✅ Reverse proxy support for HTTP protocols
+- ✅ Pluggable load balancing (round-robin)
+- ✅ Configurable via simple YAML files
+- ⏳ Graceful start/stop/reload with signal handling
+- ⏳ Prometheus-style metrics endpoint
