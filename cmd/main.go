@@ -10,6 +10,7 @@ import (
 	"github.com/stanleydv12/ginx/internal/socket/linux"
 	"github.com/stanleydv12/ginx/internal/async/epoll"
 	"github.com/stanleydv12/ginx/internal/server"
+	"github.com/stanleydv12/ginx/internal/loadbalancer"
 	"github.com/stanleydv12/ginx/pkg/logger"
 )
 
@@ -41,8 +42,15 @@ func main() {
 	// Initialize HTTP parser
 	httpParser := parser.NewHTTPParser()
 
+	// Initialize load balancer
+	loadBalancer, err := loadbalancer.NewLoadBalancer(cfg)
+	if err != nil {
+		logger.Error("Failed to initialize load balancer", "error", err)
+		os.Exit(1)
+	}
+
 	// Initialize server
-	server := server.NewServer(*cfg, socketManager, ep, httpParser)
+	server := server.NewServer(*cfg, socketManager, ep, httpParser, loadBalancer)
 
 	// Start server
 	if err := server.Start(); err != nil {
@@ -50,6 +58,4 @@ func main() {
 		os.Exit(1)
 	}
 	defer server.Stop()
-
-	logger.Info("Server started successfully")
 }

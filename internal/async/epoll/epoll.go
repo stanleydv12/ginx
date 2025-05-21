@@ -10,9 +10,10 @@ import (
 
 type EpollHandler interface {
 	Initialize() error
-	Add(fd int) error
+	Add(fd int, events uint32) error
 	Remove(fd int) error
-	Wait() ([]int, error)
+	Modify(fd int, events uint32) error
+	Wait() ([]unix.EpollEvent, error)
 	Close() error
 }
 
@@ -45,9 +46,9 @@ func (e *Epoll) Initialize() error {
 	return nil
 }
 
-func (e *Epoll) Add(fd int) error {
+func (e *Epoll) Add(fd int, events uint32) error {
 	return unix.EpollCtl(e.epfd, unix.EPOLL_CTL_ADD, fd, &unix.EpollEvent{
-		Events: unix.EPOLLIN,
+		Events: events,
 		Fd:     int32(fd),
 	})
 }
@@ -56,17 +57,20 @@ func (e *Epoll) Remove(fd int) error {
 	return unix.EpollCtl(e.epfd, unix.EPOLL_CTL_DEL, fd, nil)
 }
 
-func (e *Epoll) Wait() ([]int, error) {
+func (e *Epoll) Modify(fd int, events uint32) error {
+	return unix.EpollCtl(e.epfd, unix.EPOLL_CTL_MOD, fd, &unix.EpollEvent{
+		Events: events,
+		Fd:     int32(fd),
+	})
+}
+
+func (e *Epoll) Wait() ([]unix.EpollEvent, error) {
 	n, err := unix.EpollWait(e.epfd, e.events, -1)
 	if err != nil {
 		return nil, err
 	}
 
-	fds := make([]int, n)
-	for i := range fds {
-		fds[i] = int(e.events[i].Fd)
-	}
-	return fds, nil
+	return e.events[:n], nil
 }
 
 func (e *Epoll) Close() error {

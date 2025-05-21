@@ -1,5 +1,6 @@
 services:
   app:
+    container_name: ginx
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,20 +11,33 @@ services:
     environment:
       APP_ENV: ${APP_ENV}
       PORT: ${PORT}
+      CONFIG_PATH: ${CONFIG_PATH}
     depends_on:
       - httpbin1
       - httpbin2
+    networks:
+      - ginx
 
   # First HTTP test server
   httpbin1:
     image: kennethreitz/httpbin
+    container_name: httpbin1
     ports:
       - "8081:80"
     restart: unless-stopped
+    networks:
+      - ginx
 
   # Second HTTP test server
   httpbin2:
     image: kennethreitz/httpbin
+    container_name: httpbin2
     ports:
       - "8082:80"
     restart: unless-stopped
+    networks:
+      - ginx
+
+networks:
+  ginx:
+    driver: bridge

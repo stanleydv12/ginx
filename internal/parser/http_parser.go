@@ -40,22 +40,22 @@ func NewHTTPParser() HTTPParser {
     return HTTPParser{}
 }
 
-func (p *HTTPParser) ParseHTTPRequest(data []byte) (*entity.HTTPRequest, error) {
+func (p *HTTPParser) ParseHTTPRequest(data []byte) (entity.HTTPRequest, error) {
     reader := bufio.NewReader(bytes.NewReader(data))
     
     // Read request line
     line, _, err := reader.ReadLine()
     if err != nil {
-        return nil, err
+        return entity.HTTPRequest{}, err
     }
     
     // Parse request line
     parts := strings.SplitN(string(line), " ", 3)
     if len(parts) < 3 {
-        return nil, fmt.Errorf("malformed HTTP request")
+        return entity.HTTPRequest{}, fmt.Errorf("malformed HTTP request")
     }
     
-    req := &entity.HTTPRequest{
+    req := entity.HTTPRequest{
         Method:   parts[0],
         Path:     parts[1],
         Protocol: parts[2],
@@ -72,7 +72,7 @@ func (p *HTTPParser) ParseHTTPRequest(data []byte) (*entity.HTTPRequest, error) 
             break
         }
         if err != nil {
-            return nil, err
+            return entity.HTTPRequest{}, err
         }
         if header == "" {
             break // End of headers
@@ -96,7 +96,7 @@ func (p *HTTPParser) ParseHTTPRequest(data []byte) (*entity.HTTPRequest, error) 
             body := make([]byte, contentLength)
             _, err := io.ReadFull(reader, body)
             if err != nil {
-                return nil, err
+                return entity.HTTPRequest{}, err
             }
             req.Body = body
         }
@@ -105,29 +105,29 @@ func (p *HTTPParser) ParseHTTPRequest(data []byte) (*entity.HTTPRequest, error) 
     return req, nil
 }
 
-func (p *HTTPParser) ParseHTTPResponse(data []byte) (*entity.HTTPResponse, error) {
+func (p *HTTPParser) ParseHTTPResponse(data []byte) (entity.HTTPResponse, error) {
 	reader := bufio.NewReader(bytes.NewReader(data))
 	
 	// Read status line
 	statusLine, err := reader.ReadString('\n')
 	if err != nil {
-		return nil, fmt.Errorf("failed to read status line: %v", err)
+		return entity.HTTPResponse{}, fmt.Errorf("failed to read status line: %v", err)
 	}
 	statusLine = strings.TrimSpace(statusLine)
 
 	// Parse status line (e.g., "HTTP/1.1 200 OK")
 	parts := strings.SplitN(statusLine, " ", 3)
 	if len(parts) < 3 {
-		return nil, fmt.Errorf("malformed status line: %s", statusLine)
-	}
+		return entity.HTTPResponse{}, fmt.Errorf("malformed status line: %s", statusLine)
+	}	
 
 	// Parse status code
 	statusCode, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return nil, fmt.Errorf("invalid status code: %v", err)
+		return entity.HTTPResponse{}, fmt.Errorf("invalid status code: %v", err)
 	}
 
-	response := &entity.HTTPResponse{
+	response := entity.HTTPResponse{
 		StatusCode: statusCode,
 		Headers:   make(map[string]string),
 		Raw:       make([]byte, len(data)),
@@ -165,7 +165,7 @@ func (p *HTTPParser) ParseHTTPResponse(data []byte) (*entity.HTTPResponse, error
 			body := make([]byte, length)
 			n, err := reader.Read(body)
 			if err != nil && err != io.EOF {
-				return nil, fmt.Errorf("failed to read response body: %v", err)
+				return entity.HTTPResponse{}, fmt.Errorf("failed to read response body: %v", err)
 			}
 			response.Body = body[:n]
 		}
@@ -173,7 +173,7 @@ func (p *HTTPParser) ParseHTTPResponse(data []byte) (*entity.HTTPResponse, error
 		// If no Content-Length, read until EOF (for responses with Transfer-Encoding: chunked or connection close)
 		body, err := io.ReadAll(reader)
 		if err != nil && err != io.EOF {
-			return nil, fmt.Errorf("failed to read response body: %v", err)
+			return entity.HTTPResponse{}, fmt.Errorf("failed to read response body: %v", err)
 		}
 		response.Body = body
 	}
@@ -181,7 +181,7 @@ func (p *HTTPParser) ParseHTTPResponse(data []byte) (*entity.HTTPResponse, error
 	return response, nil
 }
 
-func (p *HTTPParser) RebuildRequest(req *entity.HTTPRequest) []byte {
+func (p *HTTPParser) RebuildRequest(req entity.HTTPRequest) []byte {
     var buf bytes.Buffer
     
     // Write request line
@@ -204,7 +204,7 @@ func (p *HTTPParser) RebuildRequest(req *entity.HTTPRequest) []byte {
 }
 
 
-func (p *HTTPParser) RebuildResponse(resp *entity.HTTPResponse) []byte {
+func (p *HTTPParser) RebuildResponse(resp entity.HTTPResponse) []byte {
     var buf bytes.Buffer
     
     // Write status line
