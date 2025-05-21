@@ -1,16 +1,43 @@
 # ginx
 
-`ginx` is a HTTP reverse proxy written in Go using low-level Linux syscalls like `epoll`. Inspired by NGINX, it aims to provide a minimal yet powerful async architecture with configurable load balancing and dynamic request routing.
+`ginx` is a high-performance HTTP reverse proxy written in Go, leveraging low-level Linux syscalls like `epoll` for efficient asynchronous I/O. Inspired by NGINX, it provides a minimal yet powerful async architecture with configurable load balancing.
 
 > ⚠️ This project is a work in progress (WIP). It's being built for learning, performance experimentation, and infrastructure tooling.
 
 ---
 
-## ✨ Features (Planned)
+## ✨ Features
 
-- ✅ Low-level async I/O using `epoll` and `unix sockets`
-- ✅ Reverse proxy support for HTTP protocols
-- ✅ Pluggable load balancing (round-robin)
-- ✅ Configurable via simple YAML files
-- ⏳ Graceful start/stop/reload with signal handling
-- ⏳ Prometheus-style metrics endpoint
+### ✅ Implemented
+- **Asynchronous I/O** using `epoll` and raw socket operations
+- **HTTP/1.1 Reverse Proxy** with support for common HTTP methods
+- **Round-Robin Load Balancing** for distributing traffic across multiple backends
+- **Configurable Backends** via YAML configuration
+- **Connection Pooling** for efficient resource usage
+
+### ⏳ Planned
+- More load balancing algorithms (least connections, IP hash)
+- Health checks for backend servers
+- Prometheus metrics endpoint
+- Dynamic configuration reload
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Go 1.21 or later
+- Linux (uses Linux-specific syscalls)
+- Docker (testing environment)
+
+### Installation
+```bash
+git clone [https://github.com/stanleydv12/ginx.git](https://github.com/stanleydv12/ginx.git)
+cd ginx
+docker compose up --build -d
+```
+
+### Testing
+```bash
+curl localhost:8080
+```
