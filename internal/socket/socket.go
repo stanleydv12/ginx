@@ -15,4 +15,5 @@ type SocketManager interface {
 	AcceptConnection(fd int) (int, error)
 	ReadFromSocket(fd int, buf []byte) (int, error)
 	WriteToSocket(fd int, buf []byte) (int, error)
+	ConnectToSocket(address string, port int) (int, error)
 }

@@ -67,10 +67,6 @@ func (s *LinuxSocketManager) CreateSocket(options *socket.SocketOptions) (fd int
 
 func (s *LinuxSocketManager) CloseSocket(fd int) error {
 	if err := unix.Close(fd); err != nil {
-		logger.Error("Failed to close socket",
-			"fd", fd,
-			"error", err,
-		)
 		return err
 	}
 	return nil
@@ -94,10 +90,6 @@ func (s *LinuxSocketManager) BindSocket(fd int, address string, port int) error 
 		Port: port,
 		Addr: addr,
 	}); err != nil {
-		logger.Error("Failed to bind socket",
-			"fd", fd,
-			"error", err,
-		)
 		return err
 	}
 
@@ -106,10 +98,6 @@ func (s *LinuxSocketManager) BindSocket(fd int, address string, port int) error 
 
 func (s *LinuxSocketManager) StartListening(fd int) error {
 	if err := unix.Listen(fd, 128); err != nil {
-		logger.Error("Failed to listen on socket",
-			"fd", fd,
-			"error", err,
-		)
 		return err
 	}
 	return nil
@@ -129,4 +117,40 @@ func (s *LinuxSocketManager) ReadFromSocket(fd int, buf []byte) (int, error) {
 
 func (s *LinuxSocketManager) WriteToSocket(fd int, buf []byte) (int, error) {
 	return unix.Write(fd, buf)
+}
+
+func (s *LinuxSocketManager) ConnectToSocket(address string, port int) (int, error) {
+	fd, err := s.CreateSocket(&socket.SocketOptions{
+		Type:        tcpType,
+		NonBlocking: true,
+		ReuseAddr:   false,
+	})
+	if err != nil {
+		logger.Error("Failed to create socket", "error", err)
+		return -1, err
+	}
+
+	var socketAddr unix.SockaddrInet4
+	if address == "" {
+		socketAddr.Addr = [4]byte{0, 0, 0, 0}
+	} else {
+		ip := net.ParseIP(address)
+		if ip == nil {
+			logger.Error("Invalid IP address", "address", address)
+			return -1, fmt.Errorf("Invalid IP address: %s", address)
+		}
+		copy(socketAddr.Addr[:], ip)
+	}
+
+	socketAddr.Port = port
+
+	if err := unix.Connect(fd, &socketAddr); err != nil && err != unix.EINPROGRESS {
+		logger.Error("Failed to connect to socket", "error", err)
+		s.CloseSocket(fd)
+		return -1, err
+	}
+
+	logger.Info("Connected to socket", "fd", fd)
+
+	return fd, nil
 }

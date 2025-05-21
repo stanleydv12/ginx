@@ -12,7 +12,7 @@ type EpollHandler interface {
 	Initialize() error
 	Add(fd int) error
 	Remove(fd int) error
-	Wait() ([]int, error)
+	Wait() ([]unix.EpollEvent, error)
 	Close() error
 }
 
@@ -56,17 +56,13 @@ func (e *Epoll) Remove(fd int) error {
 	return unix.EpollCtl(e.epfd, unix.EPOLL_CTL_DEL, fd, nil)
 }
 
-func (e *Epoll) Wait() ([]int, error) {
+func (e *Epoll) Wait() ([]unix.EpollEvent, error) {
 	n, err := unix.EpollWait(e.epfd, e.events, -1)
 	if err != nil {
 		return nil, err
 	}
 
-	fds := make([]int, n)
-	for i := range fds {
-		fds[i] = int(e.events[i].Fd)
-	}
-	return fds, nil
+	return e.events[:n], nil
 }
 
 func (e *Epoll) Close() error {

@@ -18,8 +18,8 @@ server:
   # List of upstream servers to proxy requests to
   # These match the service names in docker-compose.yml
   upstream_servers:
-    - "http://backend1:8081"  # backend1
-    - "http://backend2:8082"  # backend2
+    - "httpbin1:80"
+    - "httpbin2:80"
 
 # Development-specific settings
 development:
