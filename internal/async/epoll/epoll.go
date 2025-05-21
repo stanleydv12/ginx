@@ -65,12 +65,20 @@ func (e *Epoll) Modify(fd int, events uint32) error {
 }
 
 func (e *Epoll) Wait() ([]unix.EpollEvent, error) {
-	n, err := unix.EpollWait(e.epfd, e.events, -1)
-	if err != nil {
-		return nil, err
-	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
-	return e.events[:n], nil
+	for {
+		n, err := unix.EpollWait(e.epfd, e.events, -1)
+		if err != nil {
+			// If the system call was interrupted, retry
+			if err == unix.EINTR {
+				continue
+			}
+			return nil, err
+		}
+		return e.events[:n], nil
+	}
 }
 
 func (e *Epoll) Close() error {
