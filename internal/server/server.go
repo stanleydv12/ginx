@@ -58,7 +58,7 @@ func (s *Server) Start() error {
 	}
 	s.listenFd = fd
 
-	if err := s.epoll.Add(s.listenFd); err != nil {
+	if err := s.epoll.Add(s.listenFd, unix.EPOLLIN); err != nil {
 		logger.Error("Failed to add socket to epoll", "error", err)
 		return err
 	}
@@ -79,36 +79,50 @@ func (s *Server) Start() error {
 					return err
 				}
 			} else {
-				if eventType&unix.EPOLLIN != 0 {
-					if s.connections[fd].State == "client_accepted" {
+				if eventType&unix.EPOLLERR != 0{
+					logger.Error("EPOLL error", "fd", fd)
+					if err := s.socket.CheckSocketState(fd); err != nil {
+						logger.Error("Failed to check socket state", "error", err)
+					}
+					s.cleanupConnection(fd)
+					continue
+				}
 
+				if eventType&unix.EPOLLHUP != 0 {
+					logger.Error("EPOLL hangup", "fd", fd)
+					if err := s.socket.CheckSocketState(fd); err != nil {
+						logger.Error("Failed to check socket state", "error", err)
+					}
+					s.cleanupConnection(fd)
+					continue
+				}
+
+				switch s.connections[fd].State {
+				case connection.StateClientAccepted:
+					if eventType&unix.EPOLLIN != 0 {
 						if err := s.handleClientRequest(fd); err != nil {
 							return err
 						}
-					}
 
-					if s.connections[fd].State == "client_request_received" {
 						if err := s.handleConnectUpstream(fd); err != nil {
 							return err
 						}
+						continue
 					}
-
-					if s.connections[fd].State == "request_forwarded_to_upstream" {
-						if err := s.handleUpstreamResponse(fd); err != nil {
-							return err
-						}
-					}
-				}
-
-				if eventType&unix.EPOLLOUT != 0 {
-					if s.connections[fd].State == "try_connect_upstream" {
+				case connection.StateConnectingUpstream:
+					if eventType&unix.EPOLLOUT != 0 {
 						if err := s.handleForwardUpstream(fd); err != nil {
 							return err
 						}
+						continue
 					}
-
-					if s.connections[fd].State == "done" {
+				case connection.StateForwardingRequest:
+					if eventType&unix.EPOLLIN != 0 {
+						if err := s.handleUpstreamResponse(fd); err != nil {
+							return err
+						}
 						s.cleanupConnection(fd)
+						continue
 					}
 				}
 			}
@@ -143,14 +157,14 @@ func (s *Server) handleNewConnection() error {
 		return nil
 	}
 
-	if err := s.epoll.Add(connFd); err != nil {
+	if err := s.epoll.Add(connFd, unix.EPOLLIN); err != nil {
 		logger.Error("Failed to add connection to epoll", "error", err)
 		return err
 	}
 
 	s.connections[connFd] = &connection.Connection{
 		ClientFD: connFd,
-		State:    "client_accepted",
+		State:    connection.StateClientAccepted,
 	}
 
 	return nil
@@ -162,7 +176,7 @@ func (s *Server) handleClientRequest(clientFd int) error {
 
 	logger.Info("handleClientRequest", "fd", clientFd)
 
-	buf := make([]byte, 1024)
+	buf := make([]byte, 4096)
 
 	n, err := s.socket.ReadFromSocket(clientFd, buf)
 	if err != nil {
@@ -181,7 +195,7 @@ func (s *Server) handleClientRequest(clientFd int) error {
 
 	s.connections[clientFd].ClientAddress = req.Headers["Host"]
 	s.connections[clientFd].Request = req
-	s.connections[clientFd].State = "client_request_received"
+	s.connections[clientFd].State = connection.StateRequestReceived
 
 	logger.Info("Client read", "fd", clientFd, "connection", s.connections[clientFd])
 
@@ -214,14 +228,14 @@ func (s *Server) handleConnectUpstream(clientFd int) error {
 		return err
 	}
 
-	if err := s.epoll.Add(upstreamFd); err != nil {
+	if err := s.epoll.Add(upstreamFd, unix.EPOLLOUT); err != nil {
 		logger.Error("Failed to add upstream server to epoll", "error", err)
 		return err
 	}
 
 	s.connections[clientFd].UpstreamFD = upstreamFd
 	s.connections[clientFd].UpstreamServer = upstreamServer
-	s.connections[clientFd].State = "try_connect_upstream"
+	s.connections[clientFd].State = connection.StateConnectingUpstream
 
 	s.connections[upstreamFd] = s.connections[clientFd]
 
@@ -245,10 +259,15 @@ func (s *Server) handleForwardUpstream(upstreamFd int) error {
 		return err
 	}
 
-	s.connections[upstreamFd].State = "request_forwarded_to_upstream"
+	if err := s.epoll.Modify(upstreamFd, unix.EPOLLIN); err != nil {
+		logger.Error("Failed to modify upstream server to epoll", "error", err)
+		return err
+	}
+
+	s.connections[upstreamFd].State = connection.StateForwardingRequest
 
 	clientFd := s.connections[upstreamFd].ClientFD
-	s.connections[clientFd].State = "request_forwarded_to_upstream"
+	s.connections[clientFd].State = connection.StateForwardingRequest
 
 	return nil
 }
@@ -257,19 +276,30 @@ func (s *Server) handleUpstreamResponse(upstreamFd int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	buf := make([]byte, 4096)
+
+	n, err := s.socket.ReadFromSocket(upstreamFd, buf)
+	if err != nil {
+		if err == unix.EINTR {
+			return nil
+		}
+		logger.Error("Failed to read from socket", "error", err)
+		return err
+	}
+
 	logger.Info("handleUpstreamResponse", "fd", upstreamFd)
 
-	response, err := s.httpParser.ParseHTTPResponse(s.connections[upstreamFd].Response.Raw)
+	response, err := s.httpParser.ParseHTTPResponse(buf[:n])
 	if err != nil {
 		logger.Error("Failed to parse HTTP response", "error", err)
 		return err
 	}
 
 	s.connections[upstreamFd].Response = response
-	s.connections[upstreamFd].State = "response_received_from_upstream"
+	s.connections[upstreamFd].State = connection.StateWaitingResponse
 
 	clientFd := s.connections[upstreamFd].ClientFD
-	s.connections[clientFd].State = "response_received_from_upstream"
+	s.connections[clientFd].State = connection.StateWaitingResponse
 
 	// Modify Response Headers
 	response.Headers["Server"] = "ginx"
@@ -277,6 +307,9 @@ func (s *Server) handleUpstreamResponse(upstreamFd int) error {
 	response.Headers["X-Forwarded-Proto"] = "http"
 	response.Headers["Via"] = "ginx/1.0"
 	response.Headers["Connection"] = "close"
+	response.Headers["Content-Length"] = strconv.Itoa(len(response.Body))
+
+	response.Raw = s.httpParser.RebuildResponse(response)
 
 	_, err = s.socket.WriteToSocket(clientFd, response.Raw)
 	if err != nil {
@@ -284,8 +317,10 @@ func (s *Server) handleUpstreamResponse(upstreamFd int) error {
 		return err
 	}
 
-	s.connections[upstreamFd].State = "done"
-	s.connections[clientFd].State = "done"
+	logger.Info("Finished handling upstream response", "fd", upstreamFd, "response", response)
+
+	s.connections[upstreamFd].State = connection.StateCompleted
+	s.connections[clientFd].State = connection.StateCompleted
 
 	return nil
 }
@@ -298,6 +333,7 @@ func (s *Server) cleanupConnection(fd int) {
 
 	conn, exists := s.connections[fd]
 	if !exists {
+		logger.Error("Connection not found", "fd", fd)
 		return
 	}
 

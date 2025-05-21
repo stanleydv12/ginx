@@ -11,5 +11,18 @@ type Connection struct {
 	UpstreamServer entity.UpstreamServer
 	Request entity.HTTPRequest
 	Response entity.HTTPResponse
-	State string
+	State ConnectionState
 }
+
+type ConnectionState string
+
+const (
+    StateClientAccepted ConnectionState = "client_accepted"
+    StateRequestReceived ConnectionState = "request_received"
+    StateConnectingUpstream ConnectionState = "connecting_upstream"
+    StateForwardingRequest ConnectionState = "forwarding_request"
+    StateWaitingResponse ConnectionState = "waiting_response"
+    StateSendingResponse ConnectionState = "sending_response"
+    StateCompleted ConnectionState = "completed"
+    StateError ConnectionState = "error"
+)

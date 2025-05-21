@@ -52,14 +52,10 @@ func main() {
 	// Initialize server
 	server := server.NewServer(*cfg, socketManager, ep, httpParser, loadBalancer)
 
-	logger.Info("Server initialized successfully", "server", &server)
-
 	// Start server
 	if err := server.Start(); err != nil {
 		logger.Error("Failed to start server", "error", err)
 		os.Exit(1)
 	}
 	defer server.Stop()
-
-	logger.Info("Server started successfully")
 }
