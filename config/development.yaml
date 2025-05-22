@@ -21,6 +21,9 @@ server:
     - "httpbin1:80"
     - "httpbin2:80"
 
+  # Maximum number of open files
+  max_open_files: 100000
+
 # Development-specific settings
 development:
   debug: true

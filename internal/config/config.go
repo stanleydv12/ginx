@@ -18,6 +18,7 @@ type ServerConfig struct {
 		AsyncMethod     string   `yaml:"async_method"`
 		LoadBalancer    string   `yaml:"load_balancer"`
 		UpstreamServers []string `yaml:"upstream_servers"`
+		MaxOpenFiles    int      `yaml:"max_open_files"`
 	} `yaml:"server"`
 }
 
@@ -65,6 +66,10 @@ func LoadConfig() (*ServerConfig, error) {
 	if len(cfg.Server.UpstreamServers) == 0 {
 		logger.Error("at least one upstream server is required")
 		return nil, errors.New("at least one upstream server is required")
+	}
+	if cfg.Server.MaxOpenFiles == 0 {
+		logger.Error("server.max_open_files is required")
+		return nil, errors.New("server.max_open_files is required")
 	}
 
 	return &cfg, nil

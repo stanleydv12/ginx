@@ -5,6 +5,10 @@ services:
       context: .
       dockerfile: Dockerfile
       target: prod
+    ulimits:
+      nofile:
+        soft: ${MAX_OPEN_FILES}
+        hard: ${MAX_OPEN_FILES}
     restart: unless-stopped
     ports:
       - "${PORT}:${PORT}"
@@ -12,6 +16,11 @@ services:
       APP_ENV: ${APP_ENV}
       PORT: ${PORT}
       CONFIG_PATH: ${CONFIG_PATH}
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
     depends_on:
       - httpbin1
       - httpbin2
@@ -25,6 +34,11 @@ services:
     ports:
       - "8081:80"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
     networks:
       - ginx
 
@@ -35,6 +49,11 @@ services:
     ports:
       - "8082:80"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
     networks:
       - ginx
 

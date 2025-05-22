@@ -25,9 +25,9 @@ type Epoll struct {
 
 var defaultEpoll *Epoll
 
-func NewEpoll() EpollHandler {
+func NewEpoll(maxEvents int) EpollHandler {
 	e := &Epoll{}
-	e.events = make([]unix.EpollEvent, 1024)
+	e.events = make([]unix.EpollEvent, maxEvents)
 
 	if err := e.Initialize(); err != nil {
 		return nil

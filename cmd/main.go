@@ -37,7 +37,7 @@ func main() {
 	socketManager := linux.NewLinuxSocketManager()
 
 	// Initialize epoll
-	ep := epoll.NewEpoll()
+	ep := epoll.NewEpoll(cfg.Server.MaxOpenFiles)
 
 	// Initialize HTTP parser
 	httpParser := parser.NewHTTPParser()
