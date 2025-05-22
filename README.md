@@ -2,7 +2,7 @@
 
 `ginx` is a high-performance HTTP reverse proxy written in Go, leveraging low-level Linux syscalls like `epoll` for efficient asynchronous I/O. Inspired by NGINX, it provides a minimal yet powerful async architecture with configurable load balancing.
 
-> ⚠️ This project is a work in progress (WIP). It's being built for learning, performance experimentation, and infrastructure tooling.
+> 📖 It's being built for learning, performance experimentation, and infrastructure tooling.
 
 ---
 
